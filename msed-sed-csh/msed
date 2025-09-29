@@ -1,0 +1,125 @@
+#!/usr/bin/csh
+#Save the piped-in input into a file:
+cat > t4
+
+#Create a file and put $1 into it, but also add a space in front of it. (The
+#space is added so that line 17 below is facilitated. Further, see footnote 1
+#for information on why it is argument 1 that gets put into the file):
+echo \ $1:q > t5
+
+#Loop through all of the passed-in arguments *except* for the first argument:
+foreach i ( `seq 2 $#` )
+   #Within the t5 file, iteratively look for the $2, then the $3, etc.
+   #If you find a match, create a new file t6, where the argument is replaced
+   #by the actual argument value. (See footnote 2 in the README file for more
+   #info on what I mean by saying the argument is replaced by its value, and
+   #also for info on how to not be fooled by back-quoted $s.):
+   cat t5 | sed '/\\\\/s//\a/g;s/\([^\]\)$'$i'/\1'$argv[$i]'/g;s/\\$'$i'/$'$i'/g' > t6
+   #Now move t6 back to t5, so that we are ready to set up the next argument.
+   mv t6 t5
+   #Since we're done processing this argument, remove it from argv, but not if
+   #it's a flag that starts with a "-" (but remember that Cshell if-conditions
+   #have a problem to overcome, when testing things that start with a "-").
+   if ( X$argv[$i] !~ X-* ) set argv[$i] = ""
+end
+
+#Now we want to use almost every ";" into a line separation.
+#   A line separator? Yes: The ";" becomes "\n;"
+#   Almost every? Yes: because we DON'T want to do it for "\;". (See footnote
+#   3 in the README file for more info on our strategy in handling backquoting
+#   and also its limitations.)
+#We also want to get rid of the space added by line 8, above:
+cat t5 | sed 's/ *//;s/\\;/\f/g;s/;/\n;/g' > t6	# update
+
+#Create a sed file from the part of this file below the exit:
+sed -n '1,/^exit/\!p' < msed > t7
+
+#Use the sed program created on line 35, above, in order to process the file
+#created on line 32 above (which, you will recall, is derived from argument 1,
+#which is the sed program the user has provided):
+cat t6 | sed -ft7 > t8
+
+#Here are some initializations to set up the foreach loop that will follow:
+rm -f t9
+@ cnt = 0
+@ z = 0
+
+#Go through the version of sed commands stored in t8 (created from Line 40
+#above), to see if any of the commands used a $-# syntax or a "f" or "F":
+foreach x ( "`cat t8`" )
+   #Here, x is a single line from t8, so it is usually a single sed command.
+   #Now we want to make a variable y that will be the number # of any $-# that
+   #might be on this line x. (Let y be "" otherwise.):
+ 
+   set y = `echo $x:q | sed -n '/\v/s/ *\$-\v\([0-9]\{1,\}\).*/\1/p;'` 
+
+
+   #So now, what if $y==a number? Well that means that we need to work out
+   #what line number would match to $#-1? Set z to that line number:
+   if ( $y != "" ) @ z = `wc -l < t4` - $y 
+
+   #So now we take the single line $x and clean it up. The $-# will turn into
+   #the number $z. Also to fix: make the branches used for "f"/"F" unique, by
+   #adding a counter number to the end of whateven branch label may be in #x.
+   #(See footnote 4 of the README file, for details on handling "f"/"F".)
+   echo $x:q | sed '/\$-\v'$y'/s//'$z'/;/tlabel7;:label7/s/label7/label7'$cnt'/g' >> t9
+
+   #Increase the counter used for the branch labels on line 63, above:
+   @ cnt = $cnt + 1
+end
+
+#Line 63 above created t9, the ordinary sed implementation of the original
+#program the user had provided in $1. So we replace $1 with t9:
+set argv[1] = -ft9
+
+#Line 3 had captured the piped-in input into t4. So we now process it:
+cat t4 | sed $*:q
+
+#And now we are done with cshell:
+exit 0
+#The rest of this file is sed code (see line 35, above)
+#
+#The section below here puts individual sed commands on individual lines.
+#The issue is to clean up "y", "s", or "\" commands, because these commands
+#can have ";" inside them - and if they did have ";", then these ";" will have
+#caused line separations on Line 32, above. We need to recogize if the current
+#line starts with a "y", "s" or "\" *and* is incomplete. In that case, bring
+#in additional line(s), until the full command is on one line.
+#Note: This is a full section using multiple branches.
+#Note: All of the following should get pulled into one line each:
+#      s/;/;/  or  s;a;b;  or  y;,\;;\;,;  or  \;a;b;  or  /;;/p   or   etc.
+#Note: But, to keep things simple, we won't worry about: "[;]".
+#Note: In our new version of sed, we like the fact that ";" will cause breaks
+#      for i, a, c, C, w, W, r.
+/^[;]\{,1\}s$/{N;N;N;s/\n//g;bcombine_complete;}
+/^[;]\{,1\}s.\{1,\}$/{:incomplete;/^[;]\{,1\}s\(.\).*[^\]\1.*[^\]\1.*$/!{N;bincomplete;};s/\n//g;bcombine_complete;}
+/^[;]\{,1\}y$/{N;N;N;s/\n//g;bcombine_complete;}
+/^[;]\{,1\}y.\{1,\}$/{:incomplete1;/^[;]\{,1\}y\(.\).*[^\]\1.*[^\]\1.*$/!{N;bincomplete1;};s/\n//g;bcombine_complete;}
+/^[;]\{,1\}\f.\{1,\}$/{N;s/\n//g;bcombine_complete;} # \;<regular expression>;<command>; 
+/^[;]\{,1\}\\.\{1,\}$/{:incomplete2;/^[;]\{,1\}\\\(.\).*[^\]\1.\{1,\}$/!{N;bincomplete2;};s/\n//g;bcombine_complete;} # this one solve the problem of the above commented command. --> it will be able to get something like \c...\c.\c...c as one regular expression
+
+/^[;]\{,1\}\/.*$/{:incomplete3;/^[;]\{,1\}\/.*[^\]\/.\{1,\}$/!{N;bincomplete3;};s/\n//g;bcombine_complete;} # pattern --> /..;..;/
+:combine_complete
+#
+#Now get rid of ";" that aren't needed because they're at the start of line:
+s/^;//
+#
+#So now we have whole sed commands on lines.
+#Complete the lines below:
+s_^Z_s/[^\\n]*\\n\\{,1\\}//_
+s,^C\(.*\),s/.*/\1/,
+s_^W\(.*\)_{s/.*/\\v\&/;H;s/\\n.*//;s/\\v//;w\1\ng;s/\\n\\v.*//;x;s/.*\\v//}_	
+s,^D,{/\\n/!s/.*/\&\\n/;D;},
+s,^f,s/.*/\&/,
+#
+#Next one uses generic labels, but line 63 above is needed to get them unique:
+s_^F_tlabel7;:label7_
+#
+#These add an unusual symbol ("\v", which doesn't occur in the input) to mark
+#out the $-#, so that line 63 above can find them and convert them:
+s_^\$-_&\v_
+s_, *\$-_&\v_
+#
+#These clean up the backquotes:	
+s_\f_\\;_g
+s_\a_\\\\_g
