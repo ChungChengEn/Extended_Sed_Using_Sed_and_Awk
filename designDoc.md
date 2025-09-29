@@ -325,57 +325,10 @@ command1;command2}
 - Extremely complex nested escape sequences
 - Binary data in pattern space
 
-### 8.3 Error Handling
 
-**Current State**: Minimal error checking
+## 9. Testing Strategy
 
-**Improvement Opportunities**:
-- Validate argument count
-- Check for file write permissions
-- Detect malformed extended commands
-- Provide meaningful error messages
-
-## 9. Performance Considerations
-
-### 9.1 Time Complexity
-
-- Argument substitution: O(N × M) where N = arguments, M = script size
-- Line reconstruction: O(L) where L = number of commands
-- Reverse addressing: O(C × F) where C = commands with $-, F = file lines
-
-### 9.2 Space Complexity
-
-- Input file stored entirely in memory (t4)
-- Multiple temporary files created
-- Not suitable for extremely large files
-
-### 9.3 Optimization Opportunities
-
-- Stream processing for large files (avoid full capture)
-- Parallel argument substitution
-- Caching of processed scripts
-
-## 10. Future Enhancements
-
-### 10.1 Potential Features
-
-1. **Additional commands**: More extended commands (e.g., conditional operations)
-2. **Named arguments**: Support `$name` instead of just `$N`
-3. **Include files**: `@include "file.msed"`
-4. **Macros**: Define reusable sed fragments
-5. **Better errors**: Comprehensive error messages with line numbers
-
-### 10.2 Technical Improvements
-
-1. **Streaming mode**: Process large files without full capture
-2. **Caching**: Cache processed scripts for repeated use
-3. **Debugging mode**: Verbose output of transformation steps
-4. **Test suite**: Comprehensive test coverage
-5. **Documentation**: Man page in standard Unix format
-
-## 11. Testing Strategy
-
-### 11.1 Test Categories
+### 9.1 Test Categories
 
 1. **Basic functionality**: Each extended command in isolation
 2. **Argument substitution**: Various argument patterns
@@ -384,7 +337,7 @@ command1;command2}
 5. **Complex scripts**: Real-world use cases
 6. **Edge cases**: Empty files, single-line files, very long lines
 
-### 11.2 Test Examples
+### 9.2 Test Examples
 
 ```bash
 # Test Z command
