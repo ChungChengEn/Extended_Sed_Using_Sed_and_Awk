@@ -353,6 +353,6 @@ seq 1 10 | msed '$-2,$p' -n
 echo "a;b" | msed 's/\;/,/'
 ```
 
-## 12. Conclusion
+## 10. Conclusion
 
 Extended Sed provides a powerful enhancement to the classic sed utility while maintaining compatibility and portability. The two-implementation approach (sed+csh and awk+csh) offers flexibility for different environments and use cases. The design prioritizes clarity and maintainability while solving real-world text processing challenges.
