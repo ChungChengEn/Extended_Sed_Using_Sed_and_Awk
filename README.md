@@ -150,21 +150,6 @@ Arguments are processed in reverse order (from last to first) to prevent earlier
 ### Footnote 4: Branch Labels
 The `F` command uses automatic label generation with the pattern `label7N` where N is a counter. This prevents label conflicts in complex scripts.
 
-## Differences Between Implementations
-
-### sed+csh version
-- Pure sed processing
-- More portable across systems
-- Uses sed's native pattern matching
-- Better for traditional sed users
-
-### awk+csh version
-- Leverages awk's powerful text processing
-- More flexible string manipulation
-- Enhanced pattern matching capabilities
-- Better handling of complex edge cases
-- Additional flags: `flagL1`, `flagL2`
-
 ## Acknowledgments
 
 This project extends the classic sed utility with modern conveniences while respecting the elegance of the original design.
